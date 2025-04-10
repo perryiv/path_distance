@@ -37,3 +37,4 @@ node_modules
 debug
 release
 yarn.lock
+.vscode
