@@ -1,0 +1,22 @@
+{
+  "name": "code_test",
+  "description": "Code Test",
+  "author": "Perry L Miller IV",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "clean": "del-cli debug",
+    "config": "mkdir debug && cd debug && cmake ..",
+    "build": "cd debug && cmake --build .",
+    "test": "cd debug/src && code_test",
+    "clear": "clear",
+    "watch": "watch \"yarn run clear && yarn run clean && yarn run config && yarn run build && yarn run test && echo watching ...\" src"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "clear-cli": "^2.0.0",
+    "del-cli": "^6.0.0",
+    "mkdir": "^0.0.2",
+    "watch": "^1.0.2"
+  }
+}
