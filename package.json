@@ -8,7 +8,7 @@
     "clean": "del-cli debug",
     "config": "mkdir debug && cd debug && cmake ..",
     "build": "cd debug && cmake --build .",
-    "test": "./debug/src/code_test ../path_data/pre.data",
+    "test": "./debug/src/code_test 512 512 ../path_data/pre.data",
     "clear": "clear",
     "watch": "watch \"yarn run clear && yarn run clean && yarn run config && yarn run build && yarn run test && echo watching ...\" src"
   },
