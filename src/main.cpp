@@ -90,7 +90,7 @@ inline unsigned int getIndex ( unsigned int i, unsigned int j, unsigned int numX
 	if ( ( i >= numY ) || ( j >= numX ) )
 	{
 		std::ostringstream out;
-		out << "Input indices i = " << i << " and j = " << j << " are out of range for numX = " << numX << " and numY = " << numY;
+		out << "When getting 1D index, input indices i = " << i << " and j = " << j << " are out of range for numX = " << numX << " and numY = " << numY;
 		throw std::out_of_range ( out.str() );
 	}
 
@@ -188,11 +188,80 @@ inline Points getGroundPoints ( unsigned int numX, unsigned int numY, const Heig
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+//	Add two triangles.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+inline void addTwoTriangles ( unsigned int numX, unsigned int numY, unsigned int rowA, unsigned int rowB, unsigned int colA, unsigned int colB, const Points &points, Triangles &triangles )
+{
+	// Check the sizes.
+	checkSize ( numX, numY );
+
+	// Make sure the indices are within range.
+	if ( ( colB >= numX ) || ( colA >= numX ) )
+	{
+		std::ostringstream out;
+		out << "When adding two triangles, input indices colA = " << colA << " and colB = " << colB << " are out of range for numX = " << numX;
+		throw std::out_of_range ( out.str() );
+	}
+	if ( ( rowA >= numY ) || ( rowB >= numY ) )
+	{
+		std::ostringstream out;
+		out << "When adding two triangles, input indices rowA = " << rowA << " and rowB = " << rowB << " are out of range for numY = " << numY;
+		throw std::out_of_range ( out.str() );
+	}
+
+	// Add the triangles.
+	triangles.push_back ( {
+		getIndex ( rowA, colA, numX, numY ),
+		getIndex ( rowB, colA, numX, numY ),
+		getIndex ( rowA, colB, numX, numY )
+	} );
+	triangles.push_back ( {
+		getIndex ( rowB, colB, numX, numY ),
+		getIndex ( rowA, colB, numX, numY ),
+		getIndex ( rowB, colA, numX, numY )
+	} );
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+//	Add a row of triangles.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+inline void addTriangleRow ( unsigned int numX, unsigned int numY, unsigned int rowA, unsigned int rowB, const Points &points, Triangles &triangles )
+{
+	// Check the sizes.
+	checkSize ( numX, numY );
+
+	// Make sure the indices are within range.
+	if ( ( rowA >= numY ) || ( rowB >= numY ) )
+	{
+		std::ostringstream out;
+		out << "When adding a triangle row, input indices rowA = " << rowA << " and rowB = " << rowB << " are out of range for numY = " << numY;
+		throw std::out_of_range ( out.str() );
+	}
+
+	// Make the first column.
+	addTwoTriangles ( numX, numY, rowA, rowB, 0, 1, points, triangles );
+
+	// Loop over the remaining columns.
+	for ( unsigned int j = 1; j < ( numX - 1 ); ++j )
+	{
+		addTwoTriangles ( numX, numY, rowA, rowB, j, j + 1, points, triangles );
+	}
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
 //	Make a triangle mesh.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-inline Triangles getTriangles ( unsigned int numX, unsigned int numY )
+inline Triangles getTriangles ( unsigned int numX, unsigned int numY, const Points &points )
 {
 	// Check the sizes.
 	checkSize ( numX, numY );
@@ -201,21 +270,16 @@ inline Triangles getTriangles ( unsigned int numX, unsigned int numY )
 	Triangles triangles;
 	triangles.reserve ( ( numX - 1 ) * ( numY - 1 ) * 2 );
 
-	// Loop over the grid and make the triangle indices.
-	for ( unsigned int i = 0; i < ( numY - 1 ); ++i )
+	// Make the first row.
+	addTriangleRow ( numX, numY, 0, 1, points, triangles );
+
+	// Loop over the remaining rows.
+	for ( unsigned int i = 1; i < ( numY - 1 ); ++i )
 	{
-		for ( unsigned int j = 0; j < ( numX - 1 ); ++j )
-		{
-			// const unsigned int index = i * ( numX - 1 ) + j;
-			// Vec3ui triangle = {
-			// 	triangle.at ( 0 ) = static_cast < double > ( j );
-			// 	triangle.at ( 1 ) = static_cast < double > ( i );
-			// 	triangle.at ( 2 ) = static_cast < double > ( heights.at ( index ) );
-			// };
-			// TODO
-		}
+		addTriangleRow ( numX, numY, i, i + 1, points, triangles );
 	}
 
+	// Return the triangles. This should be a move-copy.
 	return triangles;
 }
 
@@ -267,12 +331,44 @@ inline void run ( int argc, char **argv )
 	const Heights heights = getHeightData ( numX, numY, in );
 
 	// Make the ground points with real coordinates.
-	Points points = getGroundPoints ( numX, numY, heights );
+	const Points points = getGroundPoints ( numX, numY, heights );
 
 	// Make a triangle indices.
-	const Triangles triangles = getTriangles ( numX, numY );
+	const Triangles triangles = getTriangles ( numX, numY, points );
 
 	// Get the distance along the path.
+	const double dist = getDistance ( numX, numY, i1, j1, i2, j2, points, triangles );
+
+	std::cout << "Distance along the path is " << dist << " meters" << std::endl;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+//	Run the test.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+inline void runTest()
+{
+	const Heights heights = {
+		 0,  1,  2,  3,
+		 4,  5,  6,  7,
+		 8,  9, 10, 11,
+		12, 13, 14, 15,
+		16, 17, 18, 19,
+	};
+
+	const unsigned int numX = 4;
+	const unsigned int numY = 5;
+	const unsigned int i1 = 1;
+	const unsigned int j1 = 1;
+	const unsigned int i2 = 4;
+	const unsigned int j2 = 2;
+
+	const Points points = getGroundPoints ( numX, numY, heights );
+	const Triangles triangles = getTriangles ( numX, numY, points );
+	// const Plane plane = getPlane ( i1, j1, i2, j2 );
 	const double dist = getDistance ( numX, numY, i1, j1, i2, j2, points, triangles );
 
 	std::cout << "Distance along the path is " << dist << " meters" << std::endl;
@@ -297,7 +393,8 @@ int main ( int argc, char **argv )
 	// Safely run the program.
 	try
 	{
-		run ( argc, argv );
+		runTest();
+		// run ( argc, argv );
 	}
 
 	// Catch standard exceptions.
