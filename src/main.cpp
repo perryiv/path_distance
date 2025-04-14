@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -19,10 +20,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef std::vector < std::uint8_t > Heights;
-typedef std::array < double, 3 > Vec3d;
-typedef std::vector < Vec3d > Points;
 typedef std::array < std::uint32_t, 3 > Vec3ui;
+typedef std::array < double, 3 > Vec3d;
+typedef std::array < double, 4 > Vec4d;
+typedef std::vector < Vec3d > Points;
+typedef std::vector < std::uint8_t > Heights;
 typedef std::vector < Vec3ui > Triangles;
 
 
@@ -286,6 +288,65 @@ inline Triangles getTriangles ( unsigned int numX, unsigned int numY, const Poin
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+//	Get the plane.
+//	https://stackoverflow.com/questions/1243614/how-do-i-calculate-the-normal-vector-of-a-line-segment/1243676#1243676
+//
+////////////////////////////////////////////////////////////////////////////////
+
+Vec4d getPlane ( unsigned int i1, unsigned int j1, unsigned int i2, unsigned int j2, unsigned int numX, unsigned int numY, const Points &points )
+{
+	// Get the 3D points at the given indices.
+	const Vec3d &p1 = points.at ( getIndex ( i1, j1, numX, numY ) );
+	const Vec3d &p2 = points.at ( getIndex ( i2, j2, numX, numY ) );
+
+	// Get the deltas.
+	const double dx = p2.at ( 0 ) - p1.at ( 0 );
+	const double dy = p2.at ( 1 ) - p1.at ( 1 );
+
+	// The normal vector is in the horizontal plane.
+	Vec3d n = { -dy, dx, 0 };
+
+	// Get the length of the normal vector.
+	const double length = std::sqrt (
+		( n.at ( 0 ) * n.at ( 0 ) ) +
+		( n.at ( 1 ) * n.at ( 1 ) ) +
+		( n.at ( 2 ) * n.at ( 2 ) )
+	);
+
+	// Check the length.
+	if ( length == 0.0 )
+	{
+		throw std::runtime_error ( "Points are the same, cannot calculate plane" );
+	}
+
+	// Normalize the normal vector.
+	n = {
+		n.at ( 0 ) / length,
+		n.at ( 1 ) / length,
+		n.at ( 2 ) / length
+	};
+
+	// Get the plane coefficients from the point and normal.
+	Vec4d plane = {
+		n.at ( 0 ),
+		n.at ( 1 ),
+		n.at ( 2 ),
+		-( n.at ( 0 ) * p1.at ( 0 ) + n.at ( 1 ) * p1.at ( 1 ) + n.at ( 2 ) * p1.at ( 2 ) )
+	};
+
+	// Check the plane coefficients.
+	if ( ( plane.at ( 0 ) == 0.0 ) && ( plane.at ( 1 ) == 0.0 ) && ( plane.at ( 2 ) == 0.0 ) )
+	{
+		throw std::runtime_error ( "Plane coefficients are all zero" );
+	}
+
+	// Return the new plane.
+	return plane;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
 //	Get the distance along the path.
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -312,6 +373,12 @@ inline void run ( int argc, char **argv )
 	const unsigned int i2 = getUint ( argv[5] );
 	const unsigned int j2 = getUint ( argv[6] );
 
+	// We can't accept the same point.
+	if ( ( i1 == i2 ) && ( j1 == j2 ) )
+	{
+		throw std::invalid_argument ( "Path start and end points are the same" );
+	}
+
 	// Check the sizes.
 	checkSize ( numX, numY );
 
@@ -335,6 +402,9 @@ inline void run ( int argc, char **argv )
 
 	// Make a triangle indices.
 	const Triangles triangles = getTriangles ( numX, numY, points );
+
+	// Get the plane.
+	const Vec4d plane = getPlane ( i1, j1, i2, j2, numX, numY, points );
 
 	// Get the distance along the path.
 	const double dist = getDistance ( numX, numY, i1, j1, i2, j2, points, triangles );
@@ -368,7 +438,7 @@ inline void runTest()
 
 	const Points points = getGroundPoints ( numX, numY, heights );
 	const Triangles triangles = getTriangles ( numX, numY, points );
-	// const Plane plane = getPlane ( i1, j1, i2, j2 );
+	const Vec4d plane = getPlane ( i1, j1, i2, j2, numX, numY, points );
 	const double dist = getDistance ( numX, numY, i1, j1, i2, j2, points, triangles );
 
 	std::cout << "Distance along the path is " << dist << " meters" << std::endl;
