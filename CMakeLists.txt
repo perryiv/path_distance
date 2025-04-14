@@ -21,5 +21,11 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 # Ensure the compiler generates debug information with source code paths
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdebug-prefix-map=${CMAKE_SOURCE_DIR}=.")
 
+# Find these packages.
+find_package(Eigen3 REQUIRED)
+
+# Include directories for Eigen
+include_directories(${EIGEN3_INCLUDE_DIR})
+
 # Process the directories
 add_subdirectory(${CMAKE_SOURCE_DIR}/src)

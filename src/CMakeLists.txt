@@ -5,3 +5,10 @@
 
 # Add the executable
 add_executable(${PROJECT_NAME} main.cpp)
+
+# Add the dependencies.
+target_link_libraries (
+	${PROJECT_NAME}
+	PRIVATE
+		Eigen3::Eigen
+)

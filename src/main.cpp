@@ -4,6 +4,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "Eigen/Geometry"
+
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -20,9 +22,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef std::array < std::uint32_t, 3 > Vec3ui;
-typedef std::array < double, 3 > Vec3d;
-typedef std::array < double, 4 > Vec4d;
+typedef Eigen::Vector3 < std::uint32_t > Vec3ui;
+typedef Eigen::Vector3 < double > Vec3d;
+typedef Eigen::Vector4 < double > Vec4d;
 typedef std::vector < Vec3d > Points;
 typedef std::vector < std::uint8_t > Heights;
 typedef std::vector < Vec3ui > Triangles;
@@ -149,7 +151,7 @@ inline Heights getHeightData ( unsigned int numX, unsigned int numY, std::ifstre
 ////////////////////////////////////////////////////////////////////////////////
 //
 //	Make the ground points with real coordinates.
-//	Note: CoPilot wrote this whole function. I changed very little.
+//	Note: CoPilot initially wrote this whole function. I changed very little.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -177,9 +179,9 @@ inline Points getGroundPoints ( unsigned int numX, unsigned int numY, const Heig
 		{
 			const unsigned int index = getIndex ( i, j, numX, numY );
 			Vec3d &point = points.at ( index );
-			point.at ( 0 ) = static_cast < double > ( j ) * HORIZONTAL_RESOLUTION;
-			point.at ( 1 ) = static_cast < double > ( i ) * HORIZONTAL_RESOLUTION;
-			point.at ( 2 ) = static_cast < double > ( heights.at ( index ) ) * VERTICAL_RESOLUTION;
+			point[0] = static_cast < double > ( j ) * HORIZONTAL_RESOLUTION;
+			point[1] = static_cast < double > ( i ) * HORIZONTAL_RESOLUTION;
+			point[2] = static_cast < double > ( heights.at ( index ) ) * VERTICAL_RESOLUTION;
 		}
 	}
 
@@ -299,46 +301,38 @@ Vec4d getPlane ( unsigned int i1, unsigned int j1, unsigned int i2, unsigned int
 	const Vec3d &p1 = points.at ( getIndex ( i1, j1, numX, numY ) );
 	const Vec3d &p2 = points.at ( getIndex ( i2, j2, numX, numY ) );
 
-	// Get the deltas.
-	const double dx = p2.at ( 0 ) - p1.at ( 0 );
-	const double dy = p2.at ( 1 ) - p1.at ( 1 );
+	// Make sure they are not the same point.
+	if ( p1 == p2 )
+	{
+		throw std::invalid_argument ( "Input points are equal when calculating plane" );
+	}
 
-	// The normal vector is in the horizontal plane.
-	Vec3d n = { -dy, dx, 0 };
+	// Get the line from p1 to p2.
+	const Vec3d line = p2 - p1;
 
-	// Get the length of the normal vector.
-	const double length = std::sqrt (
-		( n.at ( 0 ) * n.at ( 0 ) ) +
-		( n.at ( 1 ) * n.at ( 1 ) ) +
-		( n.at ( 2 ) * n.at ( 2 ) )
-	);
+	// Make a vertical line.
+	const Vec3d vertical ( 0, 0, 1 );
+
+	// Make the plane normal from the cross product.
+	Vec3d n = ( line.cross ( vertical ) );
 
 	// Check the length.
-	if ( length == 0.0 )
+	if ( 0 == n.norm() ) // TODO: Should use a "close float" tolerance.
 	{
 		throw std::runtime_error ( "Points are the same, cannot calculate plane" );
 	}
 
 	// Normalize the normal vector.
-	n = {
-		n.at ( 0 ) / length,
-		n.at ( 1 ) / length,
-		n.at ( 2 ) / length
-	};
+	n.normalize();
+
+	// Check the normal coefficients.
+	if ( ( n[0] == 0.0 ) && ( n[1] == 0.0 ) && ( n[2] == 0.0 ) )
+	{
+		throw std::runtime_error ( "Normal vector is all zeros" );
+	}
 
 	// Get the plane coefficients from the point and normal.
-	Vec4d plane = {
-		n.at ( 0 ),
-		n.at ( 1 ),
-		n.at ( 2 ),
-		-( n.at ( 0 ) * p1.at ( 0 ) + n.at ( 1 ) * p1.at ( 1 ) + n.at ( 2 ) * p1.at ( 2 ) )
-	};
-
-	// Check the plane coefficients.
-	if ( ( plane.at ( 0 ) == 0.0 ) && ( plane.at ( 1 ) == 0.0 ) && ( plane.at ( 2 ) == 0.0 ) )
-	{
-		throw std::runtime_error ( "Plane coefficients are all zero" );
-	}
+	Vec4d plane ( n[0], n[1], n[2], -n.dot ( p1 ) );
 
 	// Return the new plane.
 	return plane;
@@ -351,7 +345,7 @@ Vec4d getPlane ( unsigned int i1, unsigned int j1, unsigned int i2, unsigned int
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-const double getDistance ( unsigned int numX, unsigned int numY, unsigned int i1, unsigned int j1, unsigned int i2, unsigned int j2, const Points &points, const Triangles &triangles )
+const double getDistance ( unsigned int numX, unsigned int numY, unsigned int i1, unsigned int j1, unsigned int i2, unsigned int j2, const Points &points, const Triangles &triangles, const Vec4d &plane )
 {
 	return 0; // TODO
 }
@@ -407,7 +401,7 @@ inline void run ( int argc, char **argv )
 	const Vec4d plane = getPlane ( i1, j1, i2, j2, numX, numY, points );
 
 	// Get the distance along the path.
-	const double dist = getDistance ( numX, numY, i1, j1, i2, j2, points, triangles );
+	const double dist = getDistance ( numX, numY, i1, j1, i2, j2, points, triangles, plane );
 
 	std::cout << "Distance along the path is " << dist << " meters" << std::endl;
 }
@@ -439,7 +433,7 @@ inline void runTest()
 	const Points points = getGroundPoints ( numX, numY, heights );
 	const Triangles triangles = getTriangles ( numX, numY, points );
 	const Vec4d plane = getPlane ( i1, j1, i2, j2, numX, numY, points );
-	const double dist = getDistance ( numX, numY, i1, j1, i2, j2, points, triangles );
+	const double dist = getDistance ( numX, numY, i1, j1, i2, j2, points, triangles, plane );
 
 	std::cout << "Distance along the path is " << dist << " meters" << std::endl;
 }
