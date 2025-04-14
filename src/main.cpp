@@ -28,6 +28,7 @@ typedef Eigen::Vector4 < double > Vec4d;
 typedef std::vector < Vec3d > Points;
 typedef std::vector < std::uint8_t > Heights;
 typedef std::vector < Vec3ui > Triangles;
+typedef std::vector < Vec3d > Lines;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -341,12 +342,27 @@ Vec4d getPlane ( unsigned int i1, unsigned int j1, unsigned int i2, unsigned int
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+//	Intersect the plane with the triangles.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+Lines intersect ( unsigned int numX, unsigned int numY, unsigned int i1, unsigned int j1, unsigned int i2, unsigned int j2, const Points &points, const Triangles &triangles, const Vec4d &plane )
+{
+	Lines lines;
+	return lines; // TODO
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
 //	Get the distance along the path.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-const double getDistance ( unsigned int numX, unsigned int numY, unsigned int i1, unsigned int j1, unsigned int i2, unsigned int j2, const Points &points, const Triangles &triangles, const Vec4d &plane )
+double getDistance ( const Lines &lines )
 {
+	// Not sure yet if every two points is a new line segment, or if each new
+	// point is (which is a line strip).
 	return 0; // TODO
 }
 
@@ -400,8 +416,11 @@ inline void run ( int argc, char **argv )
 	// Get the plane.
 	const Vec4d plane = getPlane ( i1, j1, i2, j2, numX, numY, points );
 
+	// Intersect the plane with the triangles.
+	const Lines lines = intersect ( i1, j1, i2, j2, numX, numY, points, triangles, plane );
+
 	// Get the distance along the path.
-	const double dist = getDistance ( numX, numY, i1, j1, i2, j2, points, triangles, plane );
+	const double dist = getDistance ( lines );
 
 	std::cout << "Distance along the path is " << dist << " meters" << std::endl;
 }
@@ -433,7 +452,8 @@ inline void runTest()
 	const Points points = getGroundPoints ( numX, numY, heights );
 	const Triangles triangles = getTriangles ( numX, numY, points );
 	const Vec4d plane = getPlane ( i1, j1, i2, j2, numX, numY, points );
-	const double dist = getDistance ( numX, numY, i1, j1, i2, j2, points, triangles, plane );
+	const Lines lines = intersect ( i1, j1, i2, j2, numX, numY, points, triangles, plane );
+	const double dist = getDistance ( lines );
 
 	std::cout << "Distance along the path is " << dist << " meters" << std::endl;
 }
