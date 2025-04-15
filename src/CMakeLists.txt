@@ -4,7 +4,10 @@
 #
 
 # Add the executable
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable ( ${PROJECT_NAME}
+	main.cpp
+	Program.cpp
+)
 
 # Add the dependencies.
 target_link_libraries (
