@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "Program.h"
+#include "Tools.h"
 
 #include <fstream>
 #include <sstream>
@@ -27,63 +28,64 @@ const double VERTICAL_RESOLUTION = 11;
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-Program::Program ( unsigned int numX, unsigned int numY, unsigned int i1, unsigned int j1, unsigned int i2, unsigned int j2 ) :
-	_numX ( numX ),
-	_numY ( numY ),
-	_i1 ( i1 ),
-	_j1 ( j1 ),
-	_i2 ( i2 ),
-	_j2 ( j2 ),
+Program::Program ( int argc, char **argv ) :
+	_numX ( Tools::getUint ( argv[1] ) ),
+	_numY ( Tools::getUint ( argv[2] ) ),
+	_i1   ( Tools::getUint ( argv[3] ) ),
+	_j1   ( Tools::getUint ( argv[4] ) ),
+	_i2   ( Tools::getUint ( argv[5] ) ),
+	_j2   ( Tools::getUint ( argv[6] ) ),
 	_heights(),
 	_points(),
 	_triangles(),
 	_plane(),
-	_lines()
+	_lines(),
+	_dist ( -1 )
 {
+#ifdef USE_FAKE_DATA
+
+	_heights = {
+		 0,  1,  2,  3,
+		 4,  5,  6,  7,
+		 8,  9, 10, 11,
+		12, 13, 14, 15,
+		16, 17, 18, 19,
+	};
+
+	_numX = 4;
+	_numY = 5;
+	_i1 = 1;
+	_j1 = 1;
+	_i2 = 4;
+	_j2 = 2;
+
+#else // Use real data.
+
+	// Get the number of "pixels" in the x and y directions.
+	_numX = Tools::getUint ( argv[1] );
+	_numY = Tools::getUint ( argv[2] );
+	_i1 = Tools::getUint ( argv[3] );
+	_j1 = Tools::getUint ( argv[4] );
+	_i2 = Tools::getUint ( argv[5] );
+	_j2 = Tools::getUint ( argv[6] );
+
 	// Check the size.
-	if ( ( numX < 2 ) || ( numY < 2 ) )
+	if ( ( _numX < 2 ) || ( _numY < 2 ) )
 	{
 		throw std::invalid_argument ( "Number of pixels in the x and y directions must be at least 2" );
 	}
 
 	// We can't accept the same point.
-	if ( ( i1 == i2 ) && ( j1 == j2 ) )
+	if ( ( _i1 == _i2 ) && ( _j1 == _j2 ) )
 	{
 		throw std::invalid_argument ( "Path start and end points are the same" );
 	}
 
 	// Make sure the indices are within tange.
-	if ( ( i1 >= numX ) || ( i2 >= numX ) )
+	if ( ( _i1 >= _numX ) || ( _i2 >= _numX ) )
 	{
 		throw std::out_of_range ( "Given indices are greater than the size" );
 	}
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-//
-//	Run the program.
-//
-////////////////////////////////////////////////////////////////////////////////
-
-void Program::run ( int argc, char **argv )
-{
-	// Get the number of "pixels" in the x and y directions.
-	const unsigned int numX = getUint ( argv[1] );
-	const unsigned int numY = getUint ( argv[2] );
-	const unsigned int i1 = getUint ( argv[3] );
-	const unsigned int j1 = getUint ( argv[4] );
-	const unsigned int i2 = getUint ( argv[5] );
-	const unsigned int j2 = getUint ( argv[6] );
-
-	// We can't accept the same point.
-	if ( ( i1 == i2 ) && ( j1 == j2 ) )
-	{
-		throw std::invalid_argument ( "Path start and end points are the same" );
-	}
-
-	// Check the sizes.
-	checkSize ( numX, numY );
 
 	// Open the input file in binary.
 	const std::string name ( argv[7] );
@@ -98,24 +100,34 @@ void Program::run ( int argc, char **argv )
 	}
 
 	// Read the file into a vector of data.
-	const Heights heights = getHeightData ( numX, numY, in );
+	this->_readHeightData ( in );
 
+#endif // Use real data.
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+//	Run the program.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+void Program::_run()
+{
 	// Make the ground points with real coordinates.
-	const Points points = getGroundPoints ( numX, numY, heights );
+	this->_makeGroundPoints();
 
 	// Make the triangle indices.
-	const Triangles triangles = getTriangles ( numX, numY, points );
+	this->_makeTriangles();
 
 	// Get the plane.
-	const Vec4d plane = getPlane ( i1, j1, i2, j2, numX, numY, points );
+	this->_makePlane();
 
 	// Intersect the plane with the triangles.
-	const Lines lines = intersect ( i1, j1, i2, j2, numX, numY, points, triangles, plane );
+	this->_intersect();
 
-	// Get the distance along the path.
-	const double dist = getDistance ( lines );
-
-	std::cout << "Distance along the path is " << dist << " meters" << std::endl;
+	// Find the distance along the path.
+	this->_findDistance();
 }
 
 
@@ -388,9 +400,29 @@ void Program::_intersect()
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-double Program::_getDistance()
+void Program::_findDistance()
 {
 	// Not sure yet if every two points is a new line segment, or if each new
 	// point is (which is a line strip).
-	return 0; // TODO
+	_dist = 0; // TODO
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+//	Get the distance along the path.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+double Program::getDistance()
+{
+	// Is this the first time?
+	if ( _dist < 0 )
+	{
+		// Run through all the steps.
+		this->_run();
+	}
+
+	// Return what we have.
+	return _dist;
 }
