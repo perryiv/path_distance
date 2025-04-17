@@ -28,8 +28,12 @@ elseif ( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
 	add_compile_options ( -Wall )
 endif()
 
+# Do not warn about CGAL in debug build.
+set ( CGAL_DO_NOT_WARN_ABOUT_CMAKE_BUILD_TYPE True )
+
 # Find these packages.
 find_package ( Eigen3 REQUIRED )
+find_package ( CGAL REQUIRED )
 
 # Define debug preprocessor symbol when compiling a debug build.
 add_compile_definitions ( "$<$<CONFIG:DEBUG>:_DEBUG>" )
