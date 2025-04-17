@@ -15,9 +15,6 @@ set ( CMAKE_CXX_STANDARD_REQUIRED True )
 # Enable debug information
 set ( CMAKE_BUILD_TYPE Debug )
 
-# Ensure debug symbols are included
-set ( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g" )
-
 # Ensure the compiler generates debug information with source code paths
 set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdebug-prefix-map=${CMAKE_SOURCE_DIR}=." )
 
@@ -33,6 +30,9 @@ endif()
 
 # Find these packages.
 find_package ( Eigen3 REQUIRED )
+
+# Define debug preprocessor symbol when compiling a debug build.
+add_compile_definitions ( "$<$<CONFIG:DEBUG>:_DEBUG>" )
 
 # Include directories for Eigen
 include_directories ( ${EIGEN3_INCLUDE_DIR} )
