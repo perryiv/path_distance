@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "CGAL/Simple_cartesian.h"
+
 #include "Eigen/Geometry"
 
 #include <cstdint>
@@ -22,13 +24,21 @@ class Program
 {
 public:
 
+	typedef CGAL::Simple_cartesian < double > Kernel;
+	typedef CGAL::Segment_3 < Kernel > LineSegment;
+	typedef Kernel::Plane_3 Plane;
+	typedef Kernel::Point_3 Point;
+	typedef Kernel::Triangle_3 Triangle;
+	typedef Kernel::Vector_3 Vector;
+
 	typedef Eigen::Vector3 < std::uint32_t > Vec3ui;
 	typedef Eigen::Vector3 < double > Vec3d;
 	typedef Eigen::Vector4 < double > Vec4d;
-	typedef std::vector < Vec3d > Points;
+
 	typedef std::vector < std::uint8_t > Heights;
-	typedef std::vector < Vec3ui > Triangles;
-	typedef std::vector < Vec3d > Lines;
+	typedef std::vector < Point > Points;
+	typedef std::vector < Triangle > Triangles;
+	typedef std::vector < LineSegment > LineSegments;
 
 	// This is the only constructor we want.
 	Program ( int argc, char **argv );
@@ -49,8 +59,6 @@ protected:
 
 	void _addTriangleRow ( unsigned int rowA, unsigned int rowB, Triangles &triangles );
 	void _addTwoTriangles ( unsigned int rowA, unsigned int rowB, unsigned int colA, unsigned int colB, Triangles &triangles );
-
-	void _findDistance();
 
 	unsigned int _getIndex ( unsigned int i, unsigned int j );
 
@@ -74,7 +82,7 @@ private:
 	Heights _heights;
 	Points _points;
 	Triangles _triangles;
-	Vec4d _plane;
-	Lines _lines;
+	Plane _plane;
+	LineSegments _lines;
 	double _dist;
 };

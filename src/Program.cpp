@@ -2,14 +2,27 @@
 //
 //	The class that runs the program.
 //
+//	References:
+//	https://doc.cgal.org/latest/AABB_tree/index.html#Chapter_Fast_Intersection_and_Distance_Computation
+//
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "Program.h"
 #include "Tools.h"
 
+#include "CGAL/AABB_tree.h"
+#include "CGAL/AABB_traits.h"
+#include "CGAL/AABB_triangle_primitive.h"
+
+#include <cmath>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
+
+#ifdef _DEBUG
+#define USE_FAKE_DATA
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -81,7 +94,7 @@ Program::Program ( int argc, char **argv ) :
 		throw std::invalid_argument ( "Path start and end points are the same" );
 	}
 
-	// Make sure the indices are within tange.
+	// Make sure the indices are within range.
 	if ( ( _i1 >= _numX ) || ( _i2 >= _numX ) )
 	{
 		throw std::out_of_range ( "Given indices are greater than the size" );
@@ -117,17 +130,14 @@ void Program::_run()
 	// Make the ground points with real coordinates.
 	this->_makeGroundPoints();
 
-	// Make the triangle indices.
+	// Make the triangles.
 	this->_makeTriangles();
 
-	// Get the plane.
+	// Make the plane.
 	this->_makePlane();
 
 	// Intersect the plane with the triangles.
 	this->_intersect();
-
-	// Find the distance along the path.
-	this->_findDistance();
 }
 
 
@@ -211,9 +221,9 @@ void Program::_makeGroundPoints()
 		throw std::invalid_argument ( out.str() );
 	}
 
-	// Make the container of points and size it correctly.
+	// Make the container of points and save space.
 	Points points;
-	points.resize ( _numX * _numY );
+	points.reserve ( _numX * _numY );
 
 	// Loop over the heights and make the points.
 	for ( unsigned int i = 0; i < _numY; ++i )
@@ -221,10 +231,11 @@ void Program::_makeGroundPoints()
 		for ( unsigned int j = 0; j < _numX; ++j )
 		{
 			const unsigned int index = this->_getIndex ( i, j );
-			Vec3d &point = points.at ( index );
-			point[0] = static_cast < double > ( j ) * HORIZONTAL_RESOLUTION;
-			point[1] = static_cast < double > ( i ) * HORIZONTAL_RESOLUTION;
-			point[2] = static_cast < double > ( _heights.at ( index ) ) * VERTICAL_RESOLUTION;
+			points.push_back ( Point (
+				( static_cast < double > ( j ) * HORIZONTAL_RESOLUTION ),
+				( static_cast < double > ( i ) * HORIZONTAL_RESOLUTION ),
+				( static_cast < double > ( _heights.at ( index ) ) * VERTICAL_RESOLUTION )
+			) );
 		}
 	}
 
@@ -316,17 +327,21 @@ void Program::_addTwoTriangles ( unsigned int rowA, unsigned int rowB, unsigned 
 		throw std::out_of_range ( out.str() );
 	}
 
+	// Get the 1D indices.
+	const unsigned int itl = this->_getIndex ( rowA, colA ); // Index, top left.
+	const unsigned int itr = this->_getIndex ( rowA, colB );
+	const unsigned int ibl = this->_getIndex ( rowB, colA );
+	const unsigned int ibr = this->_getIndex ( rowB, colB );
+
+	// Get the points.
+	const Point &tl = _points.at ( itl ); // Top left.
+	const Point &tr = _points.at ( itr );
+	const Point &bl = _points.at ( ibl );
+	const Point &br = _points.at ( ibr );
+
 	// Add the triangles.
-	triangles.push_back ( {
-		this->_getIndex ( rowA, colA ),
-		this->_getIndex ( rowB, colA ),
-		this->_getIndex ( rowA, colB )
-	} );
-	triangles.push_back ( {
-		this->_getIndex ( rowB, colB ),
-		this->_getIndex ( rowA, colB ),
-		this->_getIndex ( rowB, colA )
-	} );
+	triangles.push_back ( Triangle ( tl, bl, tr ) );
+	triangles.push_back ( Triangle ( br, tr, bl ) );
 }
 
 
@@ -340,8 +355,8 @@ void Program::_addTwoTriangles ( unsigned int rowA, unsigned int rowB, unsigned 
 void Program::_makePlane()
 {
 	// Get the 3D points at the given indices.
-	const Vec3d &p1 = _points.at ( this->_getIndex ( _i1, _j1 ) );
-	const Vec3d &p2 = _points.at ( this->_getIndex ( _i2, _j2 ) );
+	const Point &p1 = _points.at ( this->_getIndex ( _i1, _j1 ) );
+	const Point &p2 = _points.at ( this->_getIndex ( _i2, _j2 ) );
 
 	// Make sure they are not the same point.
 	if ( p1 == p2 )
@@ -349,8 +364,8 @@ void Program::_makePlane()
 		throw std::invalid_argument ( "Input points are equal when calculating plane" );
 	}
 
-	// Get the line from p1 to p2.
-	const Vec3d line = p2 - p1;
+	// Get the 2D line from p1 to p2.
+	const Vec3d line ( ( p2[0] - p1[0] ), ( p2[1] - p1[1] ), 0 );
 
 	// Make a vertical line.
 	const Vec3d vertical ( 0, 0, 1 );
@@ -361,7 +376,7 @@ void Program::_makePlane()
 	// Check the length.
 	if ( 0 == n.norm() ) // TODO: Should use a "close float" tolerance.
 	{
-		throw std::runtime_error ( "Points are the same, cannot calculate plane" );
+		throw std::runtime_error ( "Plane normal vector length is zero" );
 	}
 
 	// Normalize the normal vector.
@@ -370,14 +385,18 @@ void Program::_makePlane()
 	// Check the normal coefficients.
 	if ( ( n[0] == 0.0 ) && ( n[1] == 0.0 ) && ( n[2] == 0.0 ) )
 	{
-		throw std::runtime_error ( "Normal vector is all zeros" );
+		throw std::runtime_error ( "Plane normal vector is all zeros" );
 	}
 
-	// Get the plane coefficients from the point and normal.
-	Vec4d plane ( n[0], n[1], n[2], -n.dot ( p1 ) );
+	// Get the plane from the point and normal.
+	const Plane plane ( p1, Vector ( n[0], n[1], n[2] ) );
 
 	// Set the new plane.
 	_plane = plane;
+
+	#ifdef _DEBUG
+	std::cout << "Plane: " << _plane.a() << ' ' << _plane.b() << ' ' << _plane.c() << ' ' << _plane.d() << std::endl;
+	#endif
 }
 
 
@@ -389,22 +408,48 @@ void Program::_makePlane()
 
 void Program::_intersect()
 {
-	Lines lines;
-	_lines = lines; // TODO
-}
+	// Types used below.
+	typedef Triangles::const_iterator Itr;
+	typedef CGAL::AABB_triangle_primitive < Kernel, Itr > Primitive;
+	typedef CGAL::AABB_traits < Kernel, Primitive > Traits;
+	typedef CGAL::AABB_tree < Traits > Tree;
+	typedef Tree::Intersection_and_primitive_id < Plane >::Type IntersectionType;
+	typedef boost::optional < IntersectionType > IntersectionData;
 
+	// Make the AABB tree.
+	Tree tree ( _triangles.begin(), _triangles.end() );
 
-////////////////////////////////////////////////////////////////////////////////
-//
-//	Get the distance along the path.
-//
-////////////////////////////////////////////////////////////////////////////////
+	// This is where the line-segments get added to.
+	std::vector < IntersectionData > hits;
 
-void Program::_findDistance()
-{
-	// Not sure yet if every two points is a new line segment, or if each new
-	// point is (which is a line strip).
-	_dist = 0; // TODO
+	// Intersect the triangles with the plane using the AABB tree.
+	tree.all_intersections ( _plane, std::back_inserter ( hits ) );
+
+	// Initialize these.
+	LineSegments lines;
+	double dist = 0;
+
+	// Loop through the hits.
+	for ( const auto &hit : hits )
+	{
+		if ( hit )
+		{
+			const auto &variant = hit.value().first;
+			if ( 1 == variant.which() )
+			{
+				// Save the line segment.
+				const LineSegment &line = boost::get < LineSegment > ( variant );
+				lines.push_back ( line );
+
+				// Add to the distance.
+				dist += std::sqrt ( line.squared_length() );
+			}
+		}
+	}
+
+	// Set our members.
+	_lines = lines;
+	_dist = dist;
 }
 
 
