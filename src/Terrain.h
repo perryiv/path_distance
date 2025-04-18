@@ -34,7 +34,7 @@ public:
 	typedef std::vector < LineSegment > LineSegments;
 
 	// This is the only constructor we want.
-	Terrain ( int argc, char **argv );
+	Terrain ( unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, const std::string & );
 
 	// The default destructor is fine.
 	~Terrain() = default;

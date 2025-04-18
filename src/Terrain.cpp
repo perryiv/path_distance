@@ -45,13 +45,21 @@ const double VERTICAL_RESOLUTION = 11;
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-Terrain::Terrain ( int argc, char **argv ) :
-	_numX ( Tools::getUint ( argv[1] ) ),
-	_numY ( Tools::getUint ( argv[2] ) ),
-	_i1   ( Tools::getUint ( argv[3] ) ),
-	_j1   ( Tools::getUint ( argv[4] ) ),
-	_i2   ( Tools::getUint ( argv[5] ) ),
-	_j2   ( Tools::getUint ( argv[6] ) ),
+Terrain::Terrain (
+	unsigned int numX,
+	unsigned int numY,
+	unsigned int i1,
+	unsigned int j1,
+	unsigned int i2,
+	unsigned int j2,
+	const std::string &input
+) :
+	_numX ( numX ),
+	_numY ( numY ),
+	_i1 ( i1 ),
+	_j1 ( j1 ),
+	_i2 ( i2 ),
+	_j2 ( j2 ),
 	_heights(),
 	_points(),
 	_triangles(),
@@ -62,29 +70,21 @@ Terrain::Terrain ( int argc, char **argv ) :
 #ifdef USE_FAKE_DATA
 
 	_heights = {
-		 0,  1,  2,  3,
-		 4,  5,  6,  7,
-		 8,  9, 10, 11,
-		12, 13, 14, 15,
-		16, 17, 18, 19,
+		10, 10, 10, 10,
+		10, 10, 10, 10,
+		10, 10, 10, 10,
+		10, 10, 10, 10,
+		10, 10, 10, 10,
 	};
 
 	_numX = 4;
 	_numY = 5;
 	_i1 = 1;
 	_j1 = 1;
-	_i2 = 4;
-	_j2 = 2;
+	_i2 = 2;
+	_j2 = 1;
 
 #else // Use real data.
-
-	// Get the number of "pixels" in the x and y directions.
-	_numX = Tools::getUint ( argv[1] );
-	_numY = Tools::getUint ( argv[2] );
-	_i1 = Tools::getUint ( argv[3] );
-	_j1 = Tools::getUint ( argv[4] );
-	_i2 = Tools::getUint ( argv[5] );
-	_j2 = Tools::getUint ( argv[6] );
 
 	// Check the size.
 	if ( ( _numX < 2 ) || ( _numY < 2 ) )
@@ -105,14 +105,13 @@ Terrain::Terrain ( int argc, char **argv ) :
 	}
 
 	// Open the input file in binary.
-	const std::string name ( argv[7] );
-	std::ifstream in ( name.c_str(), std::ios::binary );
+	std::ifstream in ( input.c_str(), std::ios::binary );
 
 	// Did it open?
 	if ( !in.is_open() )
 	{
 		std::ostringstream out;
-		out << "Could not open input file: " << name;
+		out << "Could not open input file: " << input;
 		throw std::runtime_error ( out.str() );
 	}
 
@@ -398,10 +397,6 @@ void Terrain::_makePlane()
 
 	// Set the new plane.
 	_plane = plane;
-
-	#ifdef _DEBUG
-	std::cout << "Plane: " << _plane.a() << ' ' << _plane.b() << ' ' << _plane.c() << ' ' << _plane.d() << std::endl;
-	#endif
 }
 
 
