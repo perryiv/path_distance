@@ -6,7 +6,7 @@
 # Add the executable
 add_executable ( ${PROJECT_NAME}
 	main.cpp
-	Program.cpp
+	Terrain.cpp
 )
 
 # Add the dependencies.

@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
-//	The class that runs the program.
+//	The class that calculates the distance over the terrain.
 //
 //	References:
 //	https://doc.cgal.org/latest/AABB_tree/index.html#Chapter_Fast_Intersection_and_Distance_Computation
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "Program.h"
+#include "Terrain.h"
 #include "Tools.h"
 
 #include "CGAL/AABB_tree.h"
@@ -45,7 +45,7 @@ const double VERTICAL_RESOLUTION = 11;
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-Program::Program ( int argc, char **argv ) :
+Terrain::Terrain ( int argc, char **argv ) :
 	_numX ( Tools::getUint ( argv[1] ) ),
 	_numY ( Tools::getUint ( argv[2] ) ),
 	_i1   ( Tools::getUint ( argv[3] ) ),
@@ -125,11 +125,11 @@ Program::Program ( int argc, char **argv ) :
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-//	Run the program.
+//	Find the distance.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void Program::_run()
+void Terrain::_findDistance()
 {
 	// Make the ground points with real coordinates.
 	this->_makeGroundPoints();
@@ -151,7 +151,7 @@ void Program::_run()
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-unsigned int Program::_getIndex ( unsigned int i, unsigned int j )
+unsigned int Terrain::_getIndex ( unsigned int i, unsigned int j )
 {
 	// Make sure the indices are in range.
 	if ( ( i >= _numY ) || ( j >= _numX ) )
@@ -183,7 +183,7 @@ unsigned int Program::_getIndex ( unsigned int i, unsigned int j )
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void Program::_readHeightData ( std::ifstream &in )
+void Terrain::_readHeightData ( std::ifstream &in )
 {
 	// Make the container of heights and size it correctly.
 	Heights heights;
@@ -215,7 +215,7 @@ void Program::_readHeightData ( std::ifstream &in )
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void Program::_makeGroundPoints()
+void Terrain::_makeGroundPoints()
 {
 	// Make sure the sizes match.
 	if ( _heights.size() != ( _numX * _numY ) )
@@ -254,7 +254,7 @@ void Program::_makeGroundPoints()
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void Program::_makeTriangles()
+void Terrain::_makeTriangles()
 {
 	// Make sure the sizes match.
 	if ( _points.size() != ( _numX * _numY ) )
@@ -288,7 +288,7 @@ void Program::_makeTriangles()
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void Program::_addTriangleRow ( unsigned int rowA, unsigned int rowB, Triangles &triangles )
+void Terrain::_addTriangleRow ( unsigned int rowA, unsigned int rowB, Triangles &triangles )
 {
 	// Make sure the indices are within range.
 	if ( ( rowA >= _numY ) || ( rowB >= _numY ) )
@@ -315,7 +315,7 @@ void Program::_addTriangleRow ( unsigned int rowA, unsigned int rowB, Triangles 
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void Program::_addTwoTriangles ( unsigned int rowA, unsigned int rowB, unsigned int colA, unsigned int colB, Triangles &triangles )
+void Terrain::_addTwoTriangles ( unsigned int rowA, unsigned int rowB, unsigned int colA, unsigned int colB, Triangles &triangles )
 {
 	// Make sure the indices are within range.
 	if ( ( colB >= _numX ) || ( colA >= _numX ) )
@@ -356,7 +356,7 @@ void Program::_addTwoTriangles ( unsigned int rowA, unsigned int rowB, unsigned 
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void Program::_makePlane()
+void Terrain::_makePlane()
 {
 	// Get the 3D points at the given indices.
 	const Point &p1 = _points.at ( this->_getIndex ( _i1, _j1 ) );
@@ -411,7 +411,7 @@ void Program::_makePlane()
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void Program::_intersect()
+void Terrain::_intersect()
 {
 	// Types used below.
 	typedef Triangles::const_iterator Itr;
@@ -464,13 +464,13 @@ void Program::_intersect()
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-double Program::getDistance()
+double Terrain::getDistance()
 {
 	// Is this the first time?
 	if ( _dist < 0 )
 	{
 		// Run through all the steps.
-		this->_run();
+		this->_findDistance();
 	}
 
 	// Return what we have.

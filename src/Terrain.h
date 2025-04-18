@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
-//	The class that runs the program.
+//	The class that calculates the distance over the terrain.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -14,11 +14,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-//	The class that runs the program.
+//	The class that runs the Terrain.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-class Program
+class Terrain
 {
 public:
 
@@ -34,16 +34,16 @@ public:
 	typedef std::vector < LineSegment > LineSegments;
 
 	// This is the only constructor we want.
-	Program ( int argc, char **argv );
+	Terrain ( int argc, char **argv );
 
 	// The default destructor is fine.
-	~Program() = default;
+	~Terrain() = default;
 
 	// Not copyable or movable.
-	Program ( const Program & ) = delete;
-	Program ( Program && ) = delete;
-	Program & operator = ( const Program & ) = delete;
-	Program & operator = ( Program && ) = delete;
+	Terrain ( const Terrain & ) = delete;
+	Terrain ( Terrain && ) = delete;
+	Terrain & operator = ( const Terrain & ) = delete;
+	Terrain & operator = ( Terrain && ) = delete;
 
 	// Get the distance.
 	double getDistance();
@@ -52,6 +52,8 @@ protected:
 
 	void _addTriangleRow ( unsigned int rowA, unsigned int rowB, Triangles &triangles );
 	void _addTwoTriangles ( unsigned int rowA, unsigned int rowB, unsigned int colA, unsigned int colB, Triangles &triangles );
+
+	void _findDistance();
 
 	unsigned int _getIndex ( unsigned int i, unsigned int j );
 
@@ -62,7 +64,6 @@ protected:
 	void _makePlane();
 
 	void _readHeightData ( std::ifstream & );
-	void _run();
 
 private:
 

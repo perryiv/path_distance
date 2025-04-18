@@ -4,7 +4,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "Program.h"
+#include "Terrain.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -28,8 +28,8 @@ int main ( int argc, char **argv )
 	// Safely run the program.
 	try
 	{
-		Program program ( argc, argv );
-		const double dist = program.getDistance();
+		Terrain before ( argc, argv );
+		const double dist = before.getDistance();
 		std::cout << "Distance along the path is " << dist << " meters" << std::endl;
 	}
 
