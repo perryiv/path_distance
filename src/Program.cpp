@@ -14,14 +14,18 @@
 #include "CGAL/AABB_traits.h"
 #include "CGAL/AABB_triangle_primitive.h"
 
+#include "Eigen/Geometry"
+
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 
+#if 1
 #ifdef _DEBUG
 #define USE_FAKE_DATA
+#endif
 #endif
 
 
@@ -365,6 +369,7 @@ void Program::_makePlane()
 	}
 
 	// Get the 2D line from p1 to p2.
+	typedef Eigen::Vector3 < double > Vec3d;
 	const Vec3d line ( ( p2[0] - p1[0] ), ( p2[1] - p1[1] ), 0 );
 
 	// Make a vertical line.
@@ -389,7 +394,7 @@ void Program::_makePlane()
 	}
 
 	// Get the plane from the point and normal.
-	const Plane plane ( p1, Vector ( n[0], n[1], n[2] ) );
+	const Plane plane ( p1, Kernel::Vector_3 ( n[0], n[1], n[2] ) );
 
 	// Set the new plane.
 	_plane = plane;

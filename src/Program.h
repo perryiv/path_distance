@@ -8,8 +8,6 @@
 
 #include "CGAL/Simple_cartesian.h"
 
-#include "Eigen/Geometry"
-
 #include <cstdint>
 #include <vector>
 
@@ -29,11 +27,6 @@ public:
 	typedef Kernel::Plane_3 Plane;
 	typedef Kernel::Point_3 Point;
 	typedef Kernel::Triangle_3 Triangle;
-	typedef Kernel::Vector_3 Vector;
-
-	typedef Eigen::Vector3 < std::uint32_t > Vec3ui;
-	typedef Eigen::Vector3 < double > Vec3d;
-	typedef Eigen::Vector4 < double > Vec4d;
 
 	typedef std::vector < std::uint8_t > Heights;
 	typedef std::vector < Point > Points;
