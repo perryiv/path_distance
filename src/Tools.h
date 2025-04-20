@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <sstream>
 #include <stdexcept>
 
 
@@ -39,6 +40,35 @@ inline unsigned int getUint ( const char *str )
 	}
 
 	return static_cast < unsigned int > ( answer );
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+//	Format the vectors.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template < class VectorType >
+inline std::string formatVec2 ( const VectorType &v, const std::string &delim = " " )
+{
+	std::ostringstream out;
+	out << v[0] << delim << v[1];
+	return out.str();
+}
+template < class VectorType >
+inline std::string formatVec3 ( const VectorType &v, const std::string &delim = " " )
+{
+	std::ostringstream out;
+	out << v[0] << delim << v[1] << delim << v[2];
+	return out.str();
+}
+template < class VectorType >
+inline std::string formatVec4 ( const VectorType &v, const std::string &delim = " " )
+{
+	std::ostringstream out;
+	out << v[0] << delim << v[1] << delim << v[2] << delim << v[3];
+	return out.str();
 }
 
 
