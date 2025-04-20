@@ -19,10 +19,11 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 
-#if 1
+#if 0
 #ifdef _DEBUG
 #define USE_FAKE_DATA
 #endif
@@ -78,10 +79,10 @@ Terrain::Terrain (
 
 	_numX = 4;
 	_numY = 4;
-	_i1 = 0;
+	_i1 = 1;
 	_j1 = 1;
-	_i2 = 2;
-	_j2 = 1;
+	_i2 = 3;
+	_j2 = 3;
 
 #else // Use real data.
 
@@ -442,6 +443,7 @@ void Terrain::_intersect()
 	typedef CGAL::AABB_tree < Traits > Tree;
 	typedef Tree::Intersection_and_primitive_id < Plane >::Type IntersectionType;
 	typedef boost::optional < IntersectionType > IntersectionData;
+	typedef Kernel::Vector_3 Vector;
 
 	// Make the AABB tree.
 	Tree tree ( _triangles.begin(), _triangles.end() );
@@ -453,6 +455,8 @@ void Terrain::_intersect()
 	tree.all_intersections ( _plane, std::back_inserter ( hits ) );
 
 	// Initialize.
+	typedef std::map < std::string, LineSegment > LineSegmentMap;
+	LineSegmentMap lsm;
 	LineSegments lines;
 
 	// Loop through the hits.
@@ -479,8 +483,8 @@ void Terrain::_intersect()
 		// This is our map key.
 		const std::string key = Details::makeMapKey ( line );
 
-		// Save the line segment in our set.
-		lines[key] = line;
+		// Save the line segment in our map.
+		lsm[key] = line;
 
 		#if 0
 		#ifdef _DEBUG
@@ -493,7 +497,38 @@ void Terrain::_intersect()
 		#endif
 	}
 
-	// Set the lines.
+	// We need to clip the lines with two planes, one at each end of the path.
+	// These are the two points at the start and end of the path.
+	const Point &p1 = _points.at ( this->_getIndex ( _i1, _j1 ) );
+	const Point &p2 = _points.at ( this->_getIndex ( _i2, _j2 ) );
+
+	// The normal vectors.
+	const Vector n1 = ( p1 - p2 );
+	const Vector n2 = ( p2 - p1 );
+
+	// Make the two planes.
+	// Note: it does not matter that the normal vectors are not unit length.
+	const Plane plane1 ( p1, n1 );
+	const Plane plane2 ( p2, n2 );
+
+	// Loop through the lines in the map.
+	for ( const auto &item : lsm )
+	{
+		// Get the line segment.
+		const LineSegment &line = item.second;
+
+		// Get the midpoint.
+		const Point mp = CGAL::midpoint ( line );
+
+		// If the midpoint is on the negative side of both planes ...
+		if ( plane1.has_on_negative_side ( mp ) && plane2.has_on_negative_side ( mp ) )
+		{
+			// Keep this line segment.
+			lines.push_back ( line );
+		}
+	}
+
+	// Set the line segments.
 	_lines = lines;
 }
 
@@ -509,13 +544,10 @@ double Terrain::_getPathDistances() const
 	// Initialize the distance.
 	double dist = 0;
 
-	// Loop through the lines in the set.
-	for ( const auto &item : _lines )
+	// Loop through the lines in the container.
+	for ( const auto &line : _lines )
 	{
-		// Get the line segment.
-		const LineSegment &line = item.second;
-
-		#if 1
+		#if 0
 		#ifdef _DEBUG
 		std::cout << "Final line segment: [";
 		std::cout << Tools::formatVec3 ( line[0] );

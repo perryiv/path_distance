@@ -9,7 +9,6 @@
 #include "CGAL/Simple_cartesian.h"
 
 #include <cstdint>
-#include <map>
 #include <vector>
 
 
@@ -32,7 +31,7 @@ public:
 	typedef std::vector < std::uint8_t > Heights;
 	typedef std::vector < Point > Points;
 	typedef std::vector < Triangle > Triangles;
-	typedef std::map < std::string, LineSegment > LineSegments;
+	typedef std::vector < LineSegment > LineSegments;
 
 	// This is the only constructor we want.
 	Terrain ( unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, const std::string & );
