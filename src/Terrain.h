@@ -9,6 +9,7 @@
 #include "CGAL/Simple_cartesian.h"
 
 #include <cstdint>
+#include <map>
 #include <vector>
 
 
@@ -31,7 +32,7 @@ public:
 	typedef std::vector < std::uint8_t > Heights;
 	typedef std::vector < Point > Points;
 	typedef std::vector < Triangle > Triangles;
-	typedef std::vector < LineSegment > LineSegments;
+	typedef std::map < std::string, LineSegment > LineSegments;
 
 	// This is the only constructor we want.
 	Terrain ( unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, const std::string & );
@@ -50,12 +51,13 @@ public:
 
 protected:
 
-	void _addTriangleRow ( unsigned int rowA, unsigned int rowB, Triangles &triangles );
-	void _addTwoTriangles ( unsigned int rowA, unsigned int rowB, unsigned int colA, unsigned int colB, Triangles &triangles );
+	void _addTriangleRow ( unsigned int rowA, unsigned int rowB, Triangles &triangles ) const;
+	void _addTwoTriangles ( unsigned int rowA, unsigned int rowB, unsigned int colA, unsigned int colB, Triangles &triangles ) const;
 
-	void _findDistance();
+	void _findPath();
 
-	unsigned int _getIndex ( unsigned int i, unsigned int j );
+	unsigned int _getIndex ( unsigned int i, unsigned int j ) const;
+	double _getPathDistances() const;
 
 	void _intersect();
 

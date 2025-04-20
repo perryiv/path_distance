@@ -70,16 +70,15 @@ Terrain::Terrain (
 #ifdef USE_FAKE_DATA
 
 	_heights = {
-		10, 10, 10, 10,
-		10, 10, 10, 10,
-		10, 10, 10, 10,
-		10, 10, 10, 10,
-		10, 10, 10, 10,
+		1, 1, 1, 1,
+		1, 1, 1, 1,
+		1, 1, 1, 1,
+		1, 1, 1, 1,
 	};
 
 	_numX = 4;
-	_numY = 5;
-	_i1 = 1;
+	_numY = 4;
+	_i1 = 0;
 	_j1 = 1;
 	_i2 = 2;
 	_j2 = 1;
@@ -128,7 +127,7 @@ Terrain::Terrain (
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void Terrain::_findDistance()
+void Terrain::_findPath()
 {
 	// Make the ground points with real coordinates.
 	this->_makeGroundPoints();
@@ -150,7 +149,7 @@ void Terrain::_findDistance()
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-unsigned int Terrain::_getIndex ( unsigned int i, unsigned int j )
+unsigned int Terrain::_getIndex ( unsigned int i, unsigned int j ) const
 {
 	// Make sure the indices are in range.
 	if ( ( i >= _numY ) || ( j >= _numX ) )
@@ -287,7 +286,7 @@ void Terrain::_makeTriangles()
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void Terrain::_addTriangleRow ( unsigned int rowA, unsigned int rowB, Triangles &triangles )
+void Terrain::_addTriangleRow ( unsigned int rowA, unsigned int rowB, Triangles &triangles ) const
 {
 	// Make sure the indices are within range.
 	if ( ( rowA >= _numY ) || ( rowB >= _numY ) )
@@ -314,7 +313,7 @@ void Terrain::_addTriangleRow ( unsigned int rowA, unsigned int rowB, Triangles 
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void Terrain::_addTwoTriangles ( unsigned int rowA, unsigned int rowB, unsigned int colA, unsigned int colB, Triangles &triangles )
+void Terrain::_addTwoTriangles ( unsigned int rowA, unsigned int rowB, unsigned int colA, unsigned int colB, Triangles &triangles ) const
 {
 	// Make sure the indices are within range.
 	if ( ( colB >= _numX ) || ( colA >= _numX ) )
@@ -402,6 +401,34 @@ void Terrain::_makePlane()
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+//	Make the key to the map of the lines.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+namespace { namespace Details
+{
+	inline std::string makeMapKey ( const std::string &s0, const std::string &s1 )
+	{
+		return std::string ( "[" + s0 + "],[" + s1 + "]" );
+	};
+	inline std::string makeMapKey ( const Terrain::LineSegment &line )
+	{
+		// Format the points as a string.
+		const std::string s0 = Tools::formatVec3 ( line[0] );
+		const std::string s1 = Tools::formatVec3 ( line[1] );
+
+		// Return the map key. If the first point (when represented as a string)
+		// is greater than the second point, swap them.
+		return ( ( s0 < s1 ) ?
+			makeMapKey ( s0, s1 ) :
+			makeMapKey ( s1, s0 )
+		);
+	};
+} }
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
 //	Intersect the plane with the triangles.
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -425,31 +452,85 @@ void Terrain::_intersect()
 	// Intersect the triangles with the plane using the AABB tree.
 	tree.all_intersections ( _plane, std::back_inserter ( hits ) );
 
-	// Initialize these.
+	// Initialize.
 	LineSegments lines;
-	double dist = 0;
 
 	// Loop through the hits.
 	for ( const auto &hit : hits )
 	{
-		if ( hit )
+		// Make sure this is a valid hit.
+		if ( !hit )
 		{
-			const auto &variant = hit.value().first;
-			if ( 1 == variant.which() )
-			{
-				// Save the line segment.
-				const LineSegment &line = boost::get < LineSegment > ( variant );
-				lines.push_back ( line );
-
-				// Add to the distance.
-				dist += std::sqrt ( line.squared_length() );
-			}
+			continue;
 		}
+
+		// Get the variant (union) from the hit.
+		const auto &variant = hit.value().first;
+
+		// We only care about line-segments, which are type number 1.
+		if ( 1 != variant.which() )
+		{
+			continue;
+		}
+
+		// Get the line segment.
+		const LineSegment &line = boost::get < LineSegment > ( variant );
+
+		// This is our map key.
+		const std::string key = Details::makeMapKey ( line );
+
+		// Save the line segment in our set.
+		lines[key] = line;
+
+		#if 0
+		#ifdef _DEBUG
+		std::cout << "Found line segment: [";
+		std::cout << Tools::formatVec3 ( line[0] );
+		std::cout << "], [";
+		std::cout << Tools::formatVec3 ( line[1] );
+		std::cout << ']' << std::endl;
+		#endif
+		#endif
 	}
 
-	// Set our members.
+	// Set the lines.
 	_lines = lines;
-	_dist = dist;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+//	Get the distance along the path.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+double Terrain::_getPathDistances() const
+{
+	// Initialize the distance.
+	double dist = 0;
+
+	// Loop through the lines in the set.
+	for ( const auto &item : _lines )
+	{
+		// Get the line segment.
+		const LineSegment &line = item.second;
+
+		#if 1
+		#ifdef _DEBUG
+		std::cout << "Final line segment: [";
+		std::cout << Tools::formatVec3 ( line[0] );
+		std::cout << "], [";
+		std::cout << Tools::formatVec3 ( line[1] );
+		std::cout << ']' << std::endl;
+		#endif
+		#endif
+
+		// Add to the distance.
+		dist += std::sqrt ( line.squared_length() );
+	}
+
+	// Return the total distance.
+	return dist;
 }
 
 
@@ -464,8 +545,11 @@ double Terrain::getDistance()
 	// Is this the first time?
 	if ( _dist < 0 )
 	{
-		// Run through all the steps.
-		this->_findDistance();
+		// Run through all the steps to find the path.
+		this->_findPath();
+
+		// Set the new distance.
+		_dist = this->_getPathDistances();
 	}
 
 	// Return what we have.
