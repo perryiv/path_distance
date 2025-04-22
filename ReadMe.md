@@ -18,7 +18,7 @@ If we run the program with no arguments it will print helpful usage information:
 	cd release
 	./src/code_test
 
-	Usage: ./release/src/code_test <num x> <num y> <x1> <y1> <x2> <y2> <input file before> <input file after>
+	Usage: ./src/code_test <num x> <num y> <x1> <y1> <x2> <y2> <input file before> <input file after>
 
 Thus, if your two height map files are 512 by 512, and are located in a folder called `path_data` at the same level as this project's top-level `path_distance` folder, then the command to run it would be:
 
