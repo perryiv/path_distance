@@ -14,8 +14,6 @@
 #include "CGAL/AABB_traits.h"
 #include "CGAL/AABB_triangle_primitive.h"
 
-#include "Eigen/Geometry"
-
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -119,6 +117,22 @@ Terrain::Terrain (
 	this->_readHeightData ( in );
 
 #endif // Use real data.
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+//	Get the start and end of the path.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+Terrain::Vec2ui Terrain::getPathStart() const
+{
+	return Vec2ui ( _i1, _j1 );
+}
+Terrain::Vec2ui Terrain::getPathEnd() const
+{
+	return Vec2ui ( _i2, _j2 );
 }
 
 

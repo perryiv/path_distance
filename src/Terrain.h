@@ -8,6 +8,8 @@
 
 #include "CGAL/Simple_cartesian.h"
 
+#include "Eigen/Geometry"
+
 #include <cstdint>
 #include <vector>
 
@@ -27,6 +29,7 @@ public:
 	typedef Kernel::Plane_3 Plane;
 	typedef Kernel::Point_3 Point;
 	typedef Kernel::Triangle_3 Triangle;
+	typedef Eigen::Vector2 < unsigned int > Vec2ui;
 
 	typedef std::vector < std::uint8_t > Heights;
 	typedef std::vector < Point > Points;
@@ -45,7 +48,12 @@ public:
 	Terrain & operator = ( const Terrain & ) = delete;
 	Terrain & operator = ( Terrain && ) = delete;
 
+	// Get the start and end of the path.
+	Vec2ui getPathStart() const;
+	Vec2ui getPathEnd() const;
+
 	// Get the distance.
+	const double &getDistance() const { return _dist; };
 	double getDistance();
 
 protected:
