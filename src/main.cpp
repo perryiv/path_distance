@@ -13,6 +13,26 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+//	Print the answer.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+inline void printAnswer ( const std::string &input, const Terrain &t )
+{
+	const Terrain::Vec2ui index1 = t.getPathStart();
+	const Terrain::Vec2ui index2 = t.getPathEnd();
+	const double &dist = t.getDistance();
+	std::cout << "Path distance from: [";
+	std::cout << Tools::formatVec2 ( index1, "," );
+	std::cout << "] to [";
+	std::cout << Tools::formatVec2 ( index2, "," );
+	std::cout << "] = " << dist << " m";
+	std::cout << std::endl;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
 //	Run the program.
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,12 +52,12 @@ inline void run ( int argc, char **argv )
 	std::cout << "Processing input file: " << input1 << std::endl;
 	Terrain t1 ( numX, numY, i1, j1, i2, j2, input1 );
 	const double d1 = t1.getDistance();
-	std::cout << "Path distance: " << d1 << " m" << std::endl;
+	printAnswer ( input1, t1 );
 
 	std::cout << "Processing input file: " << input2 << std::endl;
 	Terrain t2 ( numX, numY, i1, j1, i2, j2, input2 );
 	const double d2 = t2.getDistance();
-	std::cout << "Path distance: " << d2 << " m" << std::endl;
+	printAnswer ( input2, t2 );
 
 	const double dd = std::fabs ( d1 - d2 );
 	std::cout << "Change in distance: " << dd << " m" << std::endl;
