@@ -5,14 +5,16 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "build": "cd debug && cmake --build .",
-    "clean": "del-cli debug",
+    "build-debug": "cd debug && cmake --build .",
+    "build-release": "cd release && cmake --build .",
+    "clean": "del-cli debug release",
     "clear": "clear",
-    "config": "mkdir debug && cd debug && cmake .. -G Ninja -DCMAKE_VERBOSE_MAKEFILE=ON",
-    "test": "./debug/src/code_test 512 512 4 5 500 501 ../path_data/pre.data ../path_data/post.data",
-    "watch-build-test": "watch \"yarn run clear && yarn run build && yarn run test && echo watching ...\" src",
-    "watch-rebuild-test": "watch \"yarn run clear && yarn run clean && yarn run config && yarn run build && yarn run test && echo watching ...\" src",
-    "watch": "yarn run watch-build-test"
+    "config-debug": "mkdir debug && cd debug && cmake .. -DCMAKE_BUILD_TYPE=Debug -G Ninja -DCMAKE_VERBOSE_MAKEFILE=ON",
+    "config-release": "mkdir release && cd release && cmake .. -DCMAKE_BUILD_TYPE=Release -G Ninja -DCMAKE_VERBOSE_MAKEFILE=ON",
+    "test-debug": "./debug/src/code_test 512 512 4 5 500 501 ../path_data/pre.data ../path_data/post.data",
+    "test-release": "./release/src/code_test 512 512 4 5 500 501 ../path_data/pre.data ../path_data/post.data",
+    "watch-debug": "watch \"yarn run clear && yarn run clean && yarn run config-debug && yarn run build-debug && yarn run test-debug && echo watching ...\" src",
+    "watch-release": "watch \"yarn run clear && yarn run clean && yarn run config-release && yarn run build-release && yarn run test-release && echo watching ...\" src"
   },
   "dependencies": {},
   "devDependencies": {
